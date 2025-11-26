@@ -6,6 +6,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { firebaseAuth } from '../config/FirebaseConfig';
 import axios from "axios";
 import { convertMealObject } from '../helper.js';
+import { Dropdown } from 'react-native-element-dropdown';
 
 interface Recipe {
     id: string,
@@ -21,7 +22,13 @@ interface Recipe {
 
 const RecipeList: React.FC<NativeStackScreenProps<any>> = ({ navigation }) => {
     const [recipeList, setRecipeList] = useState<Recipe[]>([]);
+    const [categoryList, setCategoryList] = useState([]);
+    const [areaList, setAreaList] = useState([]);
+    const [ingredientList, setIngredientList] = useState([]);
     const [searchString, setSearchString] = useState("");
+    const [category, setCategory] = useState("");
+    const [area, setArea] = useState("");
+    const [ingredient, setIngredient] = useState("");
 
     useEffect(() => {
         navigation.setOptions({
@@ -37,17 +44,69 @@ const RecipeList: React.FC<NativeStackScreenProps<any>> = ({ navigation }) => {
         getRecipesFromApi();
     }, []);
 
-    const getRecipesFromApi = async () => {
-        const recipes: Recipe[] = []
+    useEffect(() => {
+        const refresh = async () => {
+            if (category !== "") {
+                await refreshRecipes("https://www.themealdb.com/api/json/v1/1/filter.php?c=" + category)
+            } else if (area !== "") {
+                await refreshRecipes("https://www.themealdb.com/api/json/v1/1/filter.php?a=" + area)
+            } else if (ingredient !== "") {
+                await refreshRecipes("https://www.themealdb.com/api/json/v1/1/filter.php?i=" + ingredient)
+            }
+        }
+        refresh()
+    }, [category, area, ingredient]);
 
-        const response = await axios.get("https://www.themealdb.com/api/json/v1/1/search.php?s=" + searchString);
-        const meals = response.data.meals
-        for (const [i, meal] of meals.entries()) {
+    const refreshRecipes = async (url: string) => {
+        console.log(url)
+        const recipeResponse = await axios.get(url);
+        const recipeDict = recipeResponse.data.meals
+        const recipes: Recipe[] = []
+        for (const [i, meal] of recipeDict.entries()) {
             recipes.push(convertMealObject(meal))
         }
 
         setRecipeList(recipes)
+    }
+
+    const getRecipesFromApi = async () => {
+        setCategory("")
+        setArea("")
+        setIngredient("")
+
+        await refreshRecipes("https://www.themealdb.com/api/json/v1/1/search.php?s=" + searchString)
+
+        const categoryResponse = await axios.get("https://www.themealdb.com/api/json/v1/1/list.php?c=list");
+        const categoryDict = categoryResponse.data.meals
+        const categories = []
+        for (const [i, category] of categoryDict.entries()) {
+            categories.push({ label: category["strCategory"], value: category["strCategory"] })
+        }
+
+        setCategoryList(categories)
+
+        const areaResponse = await axios.get("https://www.themealdb.com/api/json/v1/1/list.php?a=list");
+        const areaDict = areaResponse.data.meals
+        const areas = []
+        for (const [i, area] of areaDict.entries()) {
+            areas.push({ label: area["strArea"], value: area["strArea"] })
+        }
+
+        setAreaList(areas)
+
+        const ingredientResponse = await axios.get("https://www.themealdb.com/api/json/v1/1/list.php?i=list");
+        const ingredientDict = ingredientResponse.data.meals
+        const ingredients = []
+        for (const [i, ingredient] of ingredientDict.entries()) {
+            ingredients.push({ label: ingredient["strIngredient"], value: ingredient["strIngredient"] })
+        }
+
+        setIngredientList(ingredients)
     };
+
+    const suggestRecipes = async () => {
+
+    }
 
     const RecipeItem = ({ item }: any) => {
         return (
@@ -68,7 +127,7 @@ const RecipeList: React.FC<NativeStackScreenProps<any>> = ({ navigation }) => {
                         }}
                         resizeMode="cover"
                     />
-                    <View>
+                    <View style={{width: "60%"}}>
                         <Text style={styles.recipeTitle}>{item.name}</Text>
                     </View>
                 </View>
@@ -95,6 +154,88 @@ const RecipeList: React.FC<NativeStackScreenProps<any>> = ({ navigation }) => {
 
                 <TouchableOpacity style={{...styles.btnStyle, width: "20%", height: 50}} onPress={getRecipesFromApi}>
                     <Text style={styles.btnText}>Search</Text>
+                </TouchableOpacity>
+            </View>
+
+            <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 5
+            }}>
+                <Dropdown
+                    style={styles.dropdown}
+                    placeholderStyle={styles.placeholderStyle}
+                    selectedTextStyle={styles.selectedTextStyle}
+                    inputSearchStyle={styles.inputSearchStyle}
+                    iconStyle={styles.iconStyle}
+                    data={categoryList}
+                    search
+                    maxHeight={300}
+                    labelField="label"
+                    valueField="value"
+                    placeholder="Category"
+                    searchPlaceholder="Search..."
+                    value={category}
+                    onChange={item => {
+                        setSearchString("");
+                        setCategory(item.value);
+                        setArea("");
+                        setIngredient("");
+                    }}
+                />
+                <Dropdown
+                    style={styles.dropdown}
+                    placeholderStyle={styles.placeholderStyle}
+                    selectedTextStyle={styles.selectedTextStyle}
+                    inputSearchStyle={styles.inputSearchStyle}
+                    iconStyle={styles.iconStyle}
+                    data={areaList}
+                    search
+                    maxHeight={300}
+                    labelField="label"
+                    valueField="value"
+                    placeholder="Area"
+                    searchPlaceholder="Search..."
+                    value={area}
+                    onChange={item => {
+                        setSearchString("");
+                        setCategory("");
+                        setArea(item.value);
+                        setIngredient("");
+                    }}
+                />
+                <Dropdown
+                    style={styles.dropdown}
+                    placeholderStyle={styles.placeholderStyle}
+                    selectedTextStyle={styles.selectedTextStyle}
+                    inputSearchStyle={styles.inputSearchStyle}
+                    iconStyle={styles.iconStyle}
+                    data={ingredientList}
+                    search
+                    maxHeight={300}
+                    labelField="label"
+                    valueField="value"
+                    placeholder="Ingredient"
+                    searchPlaceholder="Search..."
+                    value={ingredient}
+                    onChange={item => {
+                        setSearchString("")
+                        setCategory("");
+                        setArea("");
+                        setIngredient(item.value);
+                    }}
+                />
+            </View>
+
+            <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 5
+            }}>
+                <TouchableOpacity style={{...styles.btnStyle, width: "80%", height: 50}} onPress={getRecipesFromApi}>
+                    <Text style={styles.btnText}>Suggest</Text>
                 </TouchableOpacity>
             </View>
             

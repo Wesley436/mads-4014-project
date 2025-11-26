@@ -77,4 +77,28 @@ export const styles = StyleSheet.create({
     fontWeight: "400",
     color: "#273c75",
   },
+  dropdown: {
+      margin: 16,
+      height: 30,
+      borderBottomColor: 'gray',
+      borderBottomWidth: 0.5,
+      width: "25%"
+    },
+    icon: {
+      marginRight: 5,
+    },
+    placeholderStyle: {
+      fontSize: 16,
+    },
+    selectedTextStyle: {
+      fontSize: 16,
+    },
+    iconStyle: {
+      width: 20,
+      height: 20,
+    },
+    inputSearchStyle: {
+      height: 40,
+      fontSize: 16,
+    },
 });
