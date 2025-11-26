@@ -3,10 +3,11 @@ import { styles } from '../style/CustomStyle';
 import { useEffect, useState } from 'react';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { firebaseAuth } from '../config/FirebaseConfig';
 import axios from "axios";
 import { convertMealObject } from '../helper.js';
 import { Dropdown } from 'react-native-element-dropdown';
+import { firebaseAuth, firebaseDB } from '../config/FirebaseConfig';
+import { getDoc, doc } from 'firebase/firestore';
 
 interface Recipe {
     id: string,
@@ -30,6 +31,8 @@ const RecipeList: React.FC<NativeStackScreenProps<any>> = ({ navigation }) => {
     const [area, setArea] = useState("");
     const [ingredient, setIngredient] = useState("");
 
+    const [usedIngredient, setUsedIngredient] = useState("")
+
     useEffect(() => {
         navigation.setOptions({
             headerLeft: () => (
@@ -45,7 +48,40 @@ const RecipeList: React.FC<NativeStackScreenProps<any>> = ({ navigation }) => {
     }, []);
 
     useEffect(() => {
+        const getDataFromApi = async () => {
+            const categoryResponse = await axios.get("https://www.themealdb.com/api/json/v1/1/list.php?c=list");
+            const categoryDict = categoryResponse.data.meals
+            const categories = []
+            for (const [i, category] of categoryDict.entries()) {
+                categories.push({ label: category["strCategory"], value: category["strCategory"] })
+            }
+
+            setCategoryList(categories)
+
+            const areaResponse = await axios.get("https://www.themealdb.com/api/json/v1/1/list.php?a=list");
+            const areaDict = areaResponse.data.meals
+            const areas = []
+            for (const [i, area] of areaDict.entries()) {
+                areas.push({ label: area["strArea"], value: area["strArea"] })
+            }
+
+            setAreaList(areas)
+
+            const ingredientResponse = await axios.get("https://www.themealdb.com/api/json/v1/1/list.php?i=list");
+            const ingredientDict = ingredientResponse.data.meals
+            const ingredients = []
+            for (const [i, ingredient] of ingredientDict.entries()) {
+                ingredients.push({ label: ingredient["strIngredient"], value: ingredient["strIngredient"] })
+            }
+
+            setIngredientList(ingredients)
+        }
+        getDataFromApi();
+    }, []);
+
+    useEffect(() => {
         const refresh = async () => {
+            setUsedIngredient("")
             if (category !== "") {
                 await refreshRecipes("https://www.themealdb.com/api/json/v1/1/filter.php?c=" + category)
             } else if (area !== "") {
@@ -58,7 +94,6 @@ const RecipeList: React.FC<NativeStackScreenProps<any>> = ({ navigation }) => {
     }, [category, area, ingredient]);
 
     const refreshRecipes = async (url: string) => {
-        console.log(url)
         const recipeResponse = await axios.get(url);
         const recipeDict = recipeResponse.data.meals
         const recipes: Recipe[] = []
@@ -74,38 +109,24 @@ const RecipeList: React.FC<NativeStackScreenProps<any>> = ({ navigation }) => {
         setArea("")
         setIngredient("")
 
+        setUsedIngredient("")
+
         await refreshRecipes("https://www.themealdb.com/api/json/v1/1/search.php?s=" + searchString)
-
-        const categoryResponse = await axios.get("https://www.themealdb.com/api/json/v1/1/list.php?c=list");
-        const categoryDict = categoryResponse.data.meals
-        const categories = []
-        for (const [i, category] of categoryDict.entries()) {
-            categories.push({ label: category["strCategory"], value: category["strCategory"] })
-        }
-
-        setCategoryList(categories)
-
-        const areaResponse = await axios.get("https://www.themealdb.com/api/json/v1/1/list.php?a=list");
-        const areaDict = areaResponse.data.meals
-        const areas = []
-        for (const [i, area] of areaDict.entries()) {
-            areas.push({ label: area["strArea"], value: area["strArea"] })
-        }
-
-        setAreaList(areas)
-
-        const ingredientResponse = await axios.get("https://www.themealdb.com/api/json/v1/1/list.php?i=list");
-        const ingredientDict = ingredientResponse.data.meals
-        const ingredients = []
-        for (const [i, ingredient] of ingredientDict.entries()) {
-            ingredients.push({ label: ingredient["strIngredient"], value: ingredient["strIngredient"] })
-        }
-
-        setIngredientList(ingredients)
     };
 
     const suggestRecipes = async () => {
-
+        const docSnap = await getDoc(doc(firebaseDB, 'ingredients', firebaseAuth.currentUser?.uid));
+        if (docSnap.exists()) {
+            let ownedIngredients = docSnap.data()["ingredients"];
+            if (usedIngredient !== "") {
+                ownedIngredients = ownedIngredients.filter(ingredient => ingredient !== usedIngredient) 
+            }
+            const usingIngredient = ownedIngredients[Math.floor(Math.random() * ownedIngredients.length)]
+            setUsedIngredient(usingIngredient)
+            await refreshRecipes("https://www.themealdb.com/api/json/v1/1/filter.php?i=" + usingIngredient)
+        } else {
+            console.log("No User Found!");
+        }
     }
 
     const RecipeItem = ({ item }: any) => {
@@ -123,7 +144,7 @@ const RecipeList: React.FC<NativeStackScreenProps<any>> = ({ navigation }) => {
                             uri:
                             item.imageUrl !== ""
                                 ? item.imageUrl
-                                : "https://1000logos.net/wp-content/uploads/2021/04/Hogwarts-Logo-500x281.png",
+                                : "",
                         }}
                         resizeMode="cover"
                     />
@@ -229,14 +250,18 @@ const RecipeList: React.FC<NativeStackScreenProps<any>> = ({ navigation }) => {
             </View>
 
             <View style={{
-                flexDirection: 'row',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                gap: 5
             }}>
-                <TouchableOpacity style={{...styles.btnStyle, width: "80%", height: 50}} onPress={getRecipesFromApi}>
-                    <Text style={styles.btnText}>Suggest</Text>
+                <TouchableOpacity style={{...styles.btnStyle, width: "40%", height: 30, paddingVertical: 0}} onPress={suggestRecipes}>
+                    <Text style={styles.btnText}> Suggest Recipes </Text>
                 </TouchableOpacity>
+                {
+                    usedIngredient !== ""
+                    ?
+                    <Text>Using: {usedIngredient}</Text>
+                    :<></>
+                }
             </View>
             
             <FlatList

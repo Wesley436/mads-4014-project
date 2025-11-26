@@ -1,27 +1,52 @@
 import { Alert, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { styles } from '../style/CustomStyle';
 import { useState, useEffect } from 'react';
-import { addDoc, collection } from 'firebase/firestore';
+import { getDoc, setDoc, doc } from 'firebase/firestore';
 import { firebaseAuth, firebaseDB } from '../config/FirebaseConfig';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { Dropdown } from 'react-native-element-dropdown';
+import axios from "axios";
 
 const AddIngredient = ({ navigation }) => {
-    const [ingredientName, setIngredientName] = useState("");
+    const [ingredientList, setIngredientList] = useState([]);
+    const [selectedIngredient, setSelectedIngredient] = useState("");
+    const [ingredient, setIngredient] = useState("");
 
     const addIngredient = async () => {
-        if (ingredientName === "") {
+        if (ingredient === "") {
             Alert.alert("Error", "Please provide an ingredient");
             return;
         }
 
-        try {
-            const collectionRef = collection(firebaseDB, 'ingredients', firebaseAuth.currentUser?.uid);
+        const docSnap = await getDoc(doc(firebaseDB, 'ingredients', firebaseAuth.currentUser?.uid));
+        if (docSnap.exists()) {
+            let ownedIngredients = docSnap.data()["ingredients"];
+            const updatedDoc = {
+                ingredients: [...ownedIngredients, ingredient]
+            }
 
-            // TODO: add ingredients to user's ingredients array
-        } catch (error) {
-            console.log(error);
+            await setDoc(doc(firebaseDB, 'ingredients', firebaseAuth.currentUser?.uid), updatedDoc);
+            Alert.alert("Ingredient added.");
+            setSelectedIngredient("")
+            setIngredient("")
+        } else {
+            Alert.alert("Failed to add ingredient.");
         }
     }
+
+    useEffect(() => {
+        const getIngredientList = async () => {
+            const ingredientResponse = await axios.get("https://www.themealdb.com/api/json/v1/1/list.php?i=list");
+            const ingredientDict = ingredientResponse.data.meals
+            const ingredients = []
+            for (const [i, ingredient] of ingredientDict.entries()) {
+                ingredients.push({ label: ingredient["strIngredient"], value: ingredient["strIngredient"] })
+            }
+
+            setIngredientList(ingredients)
+        }
+        getIngredientList()
+    }, [])
 
     useEffect(() => {
         navigation.setOptions({
@@ -35,17 +60,37 @@ const AddIngredient = ({ navigation }) => {
 
     return (
         <View style={styles.container}>
+            <Dropdown
+                style={{...styles.dropdown, width: "80%"}}
+                placeholderStyle={styles.placeholderStyle}
+                selectedTextStyle={styles.selectedTextStyle}
+                inputSearchStyle={styles.inputSearchStyle}
+                iconStyle={styles.iconStyle}
+                data={ingredientList}
+                search
+                maxHeight={300}
+                labelField="label"
+                valueField="value"
+                placeholder="Select Ingredient"
+                searchPlaceholder="Search..."
+                value={selectedIngredient}
+                onChange={item => {
+                    setSelectedIngredient(item.value)
+                    setIngredient(item.value);
+                }}
+            />
             <TextInput
                 style={styles.inputStyle}
-                value={ingredientName}
-                onChangeText={setIngredientName}
-                placeholder='Ingredient Name'
+                value={ingredient}
+                onChangeText={(text) => {
+                    setIngredient(text)
+                    setSelectedIngredient("")
+                }}
+                placeholder='Ingredient'
                 keyboardType='default'
                 autoCorrect={false}
                 autoCapitalize='words'
             />
-
-            {/* TODO: OR dropdwon selection with searching with ingredients from https://www.themealdb.com/api/json/v1/1/list.php?i=list ? */}
 
             <TouchableOpacity style={styles.btnStyle} onPress={addIngredient}>
                 <Text style={styles.btnText}>Add Ingredient</Text>

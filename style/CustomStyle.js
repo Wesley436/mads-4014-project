@@ -5,12 +5,14 @@ export const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#FFF",
     alignItems: "center",
-    padding: 10,
+    padding: 5,
   },
   rememberMe: {
     display: "flex",
     flexDirection: "row",
-    justifyContent: "space-between"
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 5
   },
   checkbox: {
     marginRight: 5,
@@ -24,7 +26,6 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 15,
     height: 50,
     width: "90%",
-    marginVertical: 10,
   },
   btnStyle: {
     marginVertical: 5,
