@@ -1,10 +1,9 @@
-import { Alert, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { styles } from '../style/CustomStyle';
 import { useState } from 'react';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { firebaseAuth, firebaseDB } from '../config/FirebaseConfig';
-import { setDoc, doc } from 'firebase/firestore';
 
 const SignUpScreen: React.FC<NativeStackScreenProps<any>> = ({ navigation }) => {
 

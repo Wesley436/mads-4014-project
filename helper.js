@@ -34,7 +34,7 @@ export function convertMealObject(apiMeal) {
     meal.ingredients = []
     meal.measures = []
     for (const [i, field] of ingredientFields.entries()) {
-        if (apiMeal[field] !== "") {
+        if (apiMeal[field] && apiMeal[field] !== "") {
             meal.ingredients.push(apiMeal[field])
             meal.measures.push(apiMeal["strMeasure" + (i + 1)])
         }

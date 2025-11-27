@@ -1,5 +1,6 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import SavedRecipes from "./SavedRecipes";
+import RecipeDetail from "./RecipeDetail";
 
 const Stack = createNativeStackNavigator();
 
@@ -19,6 +20,14 @@ const SavedRecipesStack = () => {
                 component={SavedRecipes}
                 options={{
                     title: 'Saved Recipes',
+                    headerTitleAlign: 'center'
+                }}
+            />
+            <Stack.Screen
+                name="RecipeDetail"
+                component={RecipeDetail}
+                options={{
+                    title: 'Recipe Detail',
                     headerTitleAlign: 'center'
                 }}
             />
