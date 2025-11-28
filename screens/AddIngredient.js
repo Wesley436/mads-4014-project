@@ -21,9 +21,15 @@ const AddIngredient = ({ navigation }) => {
         const docSnap = await getDoc(doc(firebaseDB, 'ingredients', firebaseAuth.currentUser?.uid));
         if (docSnap.exists()) {
             let ownedIngredients = docSnap.data()["ingredients"];
-            const updatedDoc = {
-                ingredients: [...ownedIngredients, ingredient]
+            const ingredients = []
+            if (ownedIngredients === undefined) {
+                ingredients.push(ingredient)
+            } else {
+                ingredients.push(...ownedIngredients)
+                ingredients.push(ingredient)
             }
+
+            const updatedDoc = {ingredients: ingredients}
 
             await setDoc(doc(firebaseDB, 'ingredients', firebaseAuth.currentUser?.uid), updatedDoc);
             Alert.alert("Ingredient added.");

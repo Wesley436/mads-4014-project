@@ -131,7 +131,12 @@ const RecipeList: React.FC<NativeStackScreenProps<any>> = ({ navigation }) => {
 
     const RecipeItem = ({ item }: any) => {
         return (
-            <TouchableOpacity style={styles.recipeItem} onPress={() => navigation.navigate("RecipeDetail", { recipe: item })}>
+            <TouchableOpacity style={styles.recipeItem} onPress={async () => {
+                const recipeResponse = await axios.get("https://www.themealdb.com/api/json/v1/1/lookup.php?i=" + item.id);
+                const mealObject = recipeResponse.data.meals[0]
+                const recipe = convertMealObject(mealObject)
+                navigation.navigate("RecipeDetail", { recipe: recipe })
+            }}>
                 <View style={{
                     flexDirection: 'row',
                     alignItems: 'center',
